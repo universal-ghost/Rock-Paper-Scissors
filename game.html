@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>بازی سنگ، کاغذ، قیچی حرفه‌ای</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+<style>
+body {
+    margin:0;
+    direction: rtl;
+    font-family:'Segoe UI', Tahoma, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    flex-direction:column;
+    padding:20px;
+}
+
+h2 {
+    color:#fff;
+    font-weight:700;
+    margin-bottom:20px;
+    font-size:32px;
+    text-align:center;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+}
+
+#arena {
+    display:flex;
+    justify-content:space-between;
+    width:100%;
+    max-width:1000px;
+    margin-bottom:20px;
+    gap:20px;
+}
+
+.card-arena {
+    flex:1;
+    background:#f3e5f5;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    min-height:250px;
+}
+
+.card-arena ion-icon {
+    font-size:80px;
+}
+
+#optionsCard {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:row;
+    gap:20px;
+}
+
+.icon-btn {
+    font-size:60px;
+    cursor:pointer;
+    transition: transform 0.2s,color 0.2s;
+    margin:0;
+    color:#4a148c;
+}
+.icon-btn:hover {
+    transform: scale(1.2);
+    color:#7b1fa2;
+}
+
+.roundResult {
+    margin-top:15px;
+    font-size:20px;
+    font-weight:500;
+    text-align:center;
+}
+
+/* گزارش حرفه‌ای */
+#report {
+    width:100%;
+    max-width:1000px;
+    background-color:#fff;
+    border-radius:15px;
+    padding:10px;
+    text-align:right;
+    max-height:250px;
+    overflow-y:auto;
+    margin-top:10px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.15);
+}
+
+.report-round {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#f3e5f5;
+    margin:5px 0;
+    padding:8px 12px;
+    border-radius:10px;
+    font-size:16px;
+}
+
+.report-round.win {background:#c8e6c9;}
+.report-round.lose {background:#ffcdd2;}
+.report-round.tie {background:#fff9c4;}
+
+#overlay{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    z-index:999;
+}
+
+#winnerCard{
+    position:fixed;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    background:#fff;
+    border-radius:20px;
+    padding:30px;
+    box-shadow:0 15px 50px rgba(0,0,0,0.5);
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    z-index:1000;
+}
+
+#winnerCard ion-icon#winnerIcon {
+    font-size:120px;
+    color:#4a148c;
+}
+</style>
+</head>
+<body>
+
+<h2>بازی سنگ، کاغذ، قیچی</h2>
+
+<div id="arena">
+    <div class="card-arena" id="computerCard">
+        <ion-icon id="computerIcon" name="desktop-outline"></ion-icon>
+        <div class="roundResult" id="computerResult">امتیاز: 0</div>
+    </div>
+
+    <div class="card-arena" id="optionsCard">
+        <ion-icon class="icon-btn" name="cube-outline" onclick="play('سنگ')"></ion-icon>
+        <ion-icon class="icon-btn" name="hand-left-outline" onclick="play('کاغذ')"></ion-icon>
+        <ion-icon class="icon-btn" name="cut-outline" onclick="play('قیچی')"></ion-icon>
+    </div>
+
+    <div class="card-arena" id="playerCard">
+        <ion-icon id="playerIcon" name="person-outline"></ion-icon>
+        <div class="roundResult" id="playerResult">امتیاز: 0</div>
+    </div>
+</div>
+
+<div id="report">
+    <strong>گزارش راندها:</strong>
+</div>
+
+<div id="overlay"></div>
+<div id="winnerCard">
+    <ion-icon id="winnerIcon" name=""></ion-icon>
+    <button class="btn btn-primary mt-3" onclick="resetGame()">شروع دوباره</button>
+</div>
+
+<script>
+let userScore=0, computerScore=0, roundsPlayed=0;
+const winningScore=5;
+let userHistory={'سنگ':0,'کاغذ':0,'قیچی':0};
+
+function computerMove(){
+    const maxChoice=Object.keys(userHistory).reduce((a,b)=> userHistory[a]>userHistory[b]?a:b);
+    const rand=Math.random();
+    if(rand<0.7){
+        if(maxChoice==='سنگ') return 'کاغذ';
+        if(maxChoice==='کاغذ') return 'قیچی';
+        if(maxChoice==='قیچی') return 'سنگ';
+    } else{
+        const choices=['سنگ','کاغذ','قیچی'];
+        return choices[Math.floor(Math.random()*3)];
+    }
+}
+
+function play(userChoice){
+    if(userScore>=winningScore || computerScore>=winningScore) return;
+
+    userHistory[userChoice]++;
+    const computerChoice=computerMove();
+
+    let resultText='';
+    let roundClass='';
+    if(userChoice===computerChoice) {
+        resultText='مساوی شد!';
+        roundClass='tie';
+    }
+    else if(
+        (userChoice==='سنگ' && computerChoice==='قیچی')||
+        (userChoice==='کاغذ' && computerChoice==='سنگ')||
+        (userChoice==='قیچی' && computerChoice==='کاغذ')
+    ){
+        resultText='شما برنده شدید!';
+        userScore++;
+        roundClass='win';
+    } else{
+        resultText='کامپیوتر برنده شد!';
+        computerScore++;
+        roundClass='lose';
+    }
+
+    roundsPlayed++;
+    document.getElementById('playerResult').innerText=`امتیاز: ${userScore} | ${resultText}`;
+    document.getElementById('computerResult').innerText=`امتیاز: ${computerScore} | ${resultText}`;
+
+    const reportDiv=document.getElementById('report');
+    const roundReport=document.createElement('div');
+    roundReport.className=`report-round ${roundClass}`;
+    roundReport.innerHTML=`<ion-icon name="person-outline"></ion-icon> شما ${userChoice} | <ion-icon name="desktop-outline"></ion-icon> کامپیوتر ${computerChoice} → ${resultText}`;
+    reportDiv.appendChild(roundReport);
+    reportDiv.scrollTop = reportDiv.scrollHeight;
+
+    if(userScore>=winningScore || computerScore>=winningScore){
+        const overlay=document.getElementById('overlay');
+        const winnerCard=document.getElementById('winnerCard');
+        const winnerIcon=document.getElementById('winnerIcon');
+
+        if(userScore>computerScore){
+            winnerIcon.setAttribute('name','person-outline');
+        } else{
+            winnerIcon.setAttribute('name','desktop-outline');
+        }
+
+        overlay.style.display='block';
+        winnerCard.style.display='flex';
+    }
+}
+
+function resetGame(){
+    userScore=0; computerScore=0; roundsPlayed=0;
+    userHistory={'سنگ':0,'کاغذ':0,'قیچی':0};
+    document.getElementById('playerResult').innerText='امتیاز: 0';
+    document.getElementById('computerResult').innerText='امتیاز: 0';
+    document.getElementById('report').innerHTML="<strong>گزارش راندها:</strong>";
+    document.getElementById('overlay').style.display='none';
+    document.getElementById('winnerCard').style.display='none';
+}
+</script>
+
+</body>
+</html>
